@@ -217,6 +217,15 @@ The cusotom bulk SMS Response object.
 ## v0.3.x
 
 <details open>
+<summary><strong>v0.3.3</strong></summary>
+
+- Added `bulksms` to package.json keywords
+- Added `MIT license
+
+</details>
+<br />
+
+<details>
 <summary><strong>v0.3.2</strong></summary>
 
 - Added README
