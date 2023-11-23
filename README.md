@@ -1,12 +1,16 @@
-# savannavom
+# savannacom
 
 A fully typed unnoficial Javascript SDK for the Savannacom Hermes SMS API. Unnoficial meaning it is not developed by [Savannacom](www.savannacom.zm) but by [Cerebrus Inc](https://www.cerebrus.dev).
 
 It uses cross-fetch under the hood to enable the platform and environment agnostic usage.
 
+Additionally, the functions and methods include checks to ensure that you are sending a number in the corrcet format. Incorrect numbers are automatically rejected. Duplicate messages are recognised via multiple entries with the same phone number; The same message content will not count as a duplicate message.
+
 **NOTE**
 
-This is accurate to their API as at 23 Nov 2023.
+- This is accurate to their API as at 23 Nov 2023.
+- Phone number format is `260...` as a 12 digit string.
+- One message is defined as having 160 characters, any excess characters will count as additional message(s) of which you will be charged for.
 
 # Importing
 
@@ -22,6 +26,121 @@ const savannacom = require("savannacom");
 
 // Commonjs Destructuring
 const { SMS } = require("savannacom");
+```
+
+You can also add the CDN via `jsDelivr`:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/savannacom@0.3.2/lib/index.js"></script>
+```
+
+# Exports
+
+We export the following:
+
+#### SMS(id, username)
+
+This is a class that needs to be instanciated with auth params. The methods are automatically called without need to pass authorusation. The methods are:
+
+- `sendSms(number, content): Promise<SavannacomResponse>`
+  - Send a single SMS to a single recipient.
+  - Returns a Savannacom API response object.
+- `bulkSms(data, withDuplicates?): Promise<BulkSMSResponse>`
+  - A custom method to ease sending bulk SMS' to multiple recipients; Note that this method may be subject to rate limits and can be resource intensive if the list is fairly large.
+  - By default it will ignore duplicates unless the param is set to true
+  - Returns a custom response object with errors and their details, as well as any duplicates and their details.
+
+#### sendSms(id, username, number, content): Promise<SavannacomResponse>
+
+A function to send a single SMS to a single recipient; Requires auth on every call. It operates exaclty like the class based method.
+
+#### bulkSms(is, username, data, withDuplicates?): Promise<BulkSMSResponse>
+
+A custom function to send bulkSms; Requires auth on every call. It operates exaclty like the class based method.
+
+#### BulkSMSObject
+
+This is a custom type not provided by Savannacom; Ideal usage would be if you would like to dynamically generate the details for a bulk sms operation prior to calling the bulkSms function or method.
+
+# Usage
+
+You can use both class based and function based implementions via `async/await` or `promises`.
+
+### Class Based
+
+This is ideal for backend usage wherein you can create an instance on startup and use it without needing to continously pass the auth params on every call.
+
+**example**
+
+```ts
+import { SMS } from "savannacom";
+
+const sms = new SMS(process.env.SENDER_ID, process.env.SENDER_USERNAME);
+
+const sendUpdate = async (number, message) => {
+	const update = await sms.sendSms(number, message);
+
+	if (update.error) {
+		// log errors
+	}
+};
+
+// we are not passing true to the withDuplicates param, therefore, the operation will not send requests for the duplicated phone number entries
+const sendMultipleUpdates = async (data) => {
+	const updates = await sms.bulkSms(data);
+
+	if (updates.errors) {
+		// log errors
+	}
+
+	if (updates.duplicates) {
+		// handle duplicates
+	}
+};
+
+sendUpdate("260970101010", "Test 1");
+sendMultipleUpdates([
+	{ number: "260970101010", content: "Test 2" },
+	{ number: "260970909090", content: "Test 3" },
+]);
+```
+
+### Function Based
+
+This can be used in the browser or in your favourite framework. It requires auth params on every call so ensure to keep them obfuscated.
+
+```ts
+import { sendSms, bulkSms } from "savannacom";
+
+// Promise based example
+sendSms("00000", "username", "260970101010", "Test 4")
+	.then((update) => {
+		// success handler
+	})
+	.catch((error) => {
+		// error handler
+	});
+
+// Passing true to param withDuplicates will send the duplicate entries
+const sendMultipleUpdates = async (data, withDuplicates) => {
+	const updates = await bulkSms("00000", "username", data, withDuplicates);
+
+	if (updates.errors) {
+		// log errors
+	}
+
+	if (updates.duplicates) {
+		// handle duplicates
+	}
+};
+
+sendMultipleUpdates(
+	[
+		{ number: "260970101010", content: "Test 4" },
+		{ number: "260970101010", content: "Test 5" },
+	],
+	true
+);
 ```
 
 # Utils
@@ -40,291 +159,93 @@ This package comes with some utils to make it more secure to interface with the 
   - 075
 - It does not enforce content length to be less than 160 chars; If you do not want to mistakenly go over the limit you may enforce this on your own
 
-# Functions
+# Types
 
-## randomColour
+### SavannacomResponse
 
-Get a random colour; For those scenarios where you couldn't care less!
-
-Returns a `string`
-
-```javascript
-const c = randomColour();
-const cRGB = randomColour("rgb");
-const cCMYK = randomColour("cmyk");
-const cHSV = randomColour("hsv");
-const cHSL = randomColour("hsl");
-
-console.log(c, cRGB, cCMYK, cHSV, cHSL);
-// #f7f7f7, rgb(247,247,247), cmyk(0%,0%,0%,3%), hsv(0,0%,97%), hsl(0,0%,97%)
-```
-
-<details>
-<summary><strong>Params</strong></summary>
-
-| Parameter | Default Setting | Required? | Definition                                 | Options                            |
-| --------- | --------------- | --------- | ------------------------------------------ | ---------------------------------- |
-| setting   | `hex`           | No        | The type of colour you would like returned | `hex`, `rgb`, `cmyk`, `hsv`, `hsl` |
-
-</details>
-<br />
-
-## parseDate
-
-Send in date parameters and receive either an object with their metadata, or a parsed date (e.g `2 Sep 2020`); American formatting is possible (e.g `Sep 2 2020`).
-
-**NOTE:** You do not need to add 1 to the day or month, it will do that for you.
-
-Returns a `string` or `DateObject`
-
-```javascript
-const d = new Date();
-
-const dateArr = [d.getDate(), d.getDay(), d.getMonth(), d.getFullYear()];
-
-const pD = parseDate(...dateArr, "nll", true);
-const pDfull = parseDate(...dateArr, "lll");
-
-console.log(pD, pDfull);
-// October 24 2022, Monday 24th October 2022
-```
-
-<details>
-<summary><strong>interface</strong></summary>
+The Savannacom API response object.
 
 ```ts
-interface DateObject {
-	day: {
-		short: string;
-		long: string;
-		ordinalMonth: string;
-		ordinalWeek: string;
-		weekNumber: number;
-		monthNumber: number;
+{
+	status: string;
+	message: string;
+	data: {
+		sender_username: string;
+		sender_id: string;
+		sender_message: string;
+		msisdn: string;
 	};
-	month: {
-		short: string;
-		long: string;
-		ordinal: string;
-		number: number;
-	};
-	year: {
-		short: number;
-		long: number;
-	};
+	error?: string;
 }
 ```
 
-</details>
-<br />
+### BulkSMSObject
 
-<details>
-<summary><strong>Params</strong></summary>
-
-| Parameter | Default Setting | Required? | Definition                                                    | Options                                                                                                       |
-| --------- | --------------- | --------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| monthDay  | `none`          | Yes       | The day of the month                                          | type `number`                                                                                                 |
-| weekDay   | `none`          | Yes       | The day of the week                                           | type `number`                                                                                                 |
-| month     | `none`          | Yes       | The numeric month                                             | type `number`                                                                                                 |
-| year      | `none`          | Yes       | The full numeric year                                         | type `number`                                                                                                 |
-| format    | `none`          | No        | The date format you would like                                | n = numeric, s = shorthand text, l = full text; `nns`, `nnl`, `sss`, `ssl`, `lll`, `nss`, `nsl`, `nls`, `nll` |
-| american  | `false`         | No        | Whether or not you would like the format to be 'Americanised' | `true`, `false`                                                                                               |
-
-</details>
-<br />
-
-## numParse
-
-Convert a number into a string as if it's MS Excel!
-
-Returns a `string`
-
-```javascript
-const num = numParse(2100.45, "space");
-const numEurope = numParse(2100.45, "punct");
-const numCustom = numParse(2100.45, "-" as any);
-
-console.log(num, numEurope, numCustom);
-// 2 100.45, 2.100,45, 2-100.45)
-```
-
-<details>
-<summary><strong>Params</strong></summary>
-
-| Parameter | Default Setting | Required? | Definition                       | Options                                                    |
-| --------- | --------------- | --------- | -------------------------------- | ---------------------------------------------------------- |
-| value     | `undefined`     | Yes       | The number you want to be parsed | `none`                                                     |
-| setting   | `comma`         | No        | The delimiter for the number     | `space`, `comma`, `punct`, any other delimiter as a string |
-
-</details>
-<br />
-
-## Logger
-
-Log code executions, stats, and processing times in any framework in any environment; and chain the logs to see the entire process in the terminal!
-
-Returns `void`
-
-**code example**
+The custom bulk SMS request interface.
 
 ```ts
-import { Logger } from "@cerebrusinc/qol";
-import someFunction from "./someFunction";
-import { express } from "express";
-
-const app = express();
-logger = new Logger();
-
-app.use((req, res, next) => {
-	logger.newLog("log", req.method, req.path);
-	logger.log("log", "someFunction", "Doing something...");
-	someFunction();
-	logger.procTime();
-	next();
-	logger.execTime();
-});
-// rest of your code
+{
+	number: string;
+	content: string;
+}
 ```
 
-**terminal output**
+### BulkSMSResponseError
 
-```sh
-[log • aGy5Op]: GET => /hello | 07/10/2023, 2:46:19 am
-[log • aGy5Op]: someFunction => Doing something... | 07/10/2023, 2:46:20 am
-[stats • aGy5Op]: someFunction => 53ms
-[exec • aGy5Op]: 121ms
-```
-
-<details>
-<summary><strong>Variables</strong></summary>
-
-| Variable           | Default Setting | Required? | Definition                                                                    |
-| ------------------ | --------------- | --------- | ----------------------------------------------------------------------------- |
-| idLength           | `5`             | No        | A `number` that determines the length of the log id                           |
-| americanDate       | `false`         | No        | A `boolean` that determines whether the `parseDate` output should be american |
-| locale?            | `undefined`     | No        | A `Intl.LocalesArgument` that determines the time locale                      |
-| timeFormatOptions? | `undefined`     | No        | A `Intl.DateTimeFormatOptions` that sets options for the time output          |
-
-These can be set when initialising the `Logger` or dynamically. **NOTE** that you can initialise any of them as undefined through the constructor and it will set their default values, however, dynamically they will need a value of their type unless they can be undefined.
+The custom bulk SMS error object.
 
 ```ts
-// Set the americanDate param through the constructor
-const logger = new Logger(undefined, true);
-
-// set the americanDate param dynamically
-logger.americanDate = false;
+{
+	number: string;
+	error: string;
+}
 ```
 
-</details>
-<br />
+### BulkSMSResponse
 
-<details>
-<summary><strong>Methods</strong></summary>
-
-| Method   | Type                                                                              | Details                                                                                       |
-| -------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| newLog   | `(config: "stats" or "log" or "error", process: string, message: string) => void` | Create a new log chain; This will change the `log id`                                         |
-| log      | `(config: "stats" or "log" or "error", process: string, message: string) => void` | Add a log to the log chain; This will not change the `log id`                                 |
-| procTime | `() => void`                                                                      | Log the processing time between this call and the previous call to view their processing time |
-| execTime | `() => void`                                                                      | View the entire execution time                                                                |
-
-</details>
-<br />
-
-## sleep
-
-Mimics python's `time.sleep` function when a delay is needed to mimic processes such as an API call.
-
-Returns a `Promise<unknown>`
+The cusotom bulk SMS Response object.
 
 ```ts
-const fetchData = async (): Promise<string> => {
-	try {
-		await sleep(1200);
-		return "data";
-	} catch {
-		return "fetchData error";
-	}
-};
-
-console.log(fetchData());
-// data
+{
+	errors?: BulkSMSResponseError[];
+	duplicates?: BulkSMSObject[];
+}
 ```
-
-You can also mimick an error by setting the error arg to `true`:
-
-```ts
-const fetchData = async (): Promise<string> => {
-	try {
-		// set it to true
-		await sleep(1200, true);
-		return "data";
-	} catch {
-		return "fetchData error";
-	}
-};
-
-console.log(fetchData());
-// fetchData error
-```
-
-<details>
-<summary><strong>Params</strong></summary>
-
-| Parameter | Default Setting | Required? | Definition                       | Options                                                    |
-| --------- | --------------- | --------- | -------------------------------- | ---------------------------------------------------------- |
-| value     | `undefined`     | Yes       | The number you want to be parsed | `none`                                                     |
-| setting   | `comma`         | No        | The delimiter for the number     | `space`, `comma`, `punct`, any other delimiter as a string |
-
-</details>
-<br />
 
 # Changelog
 
-## v1.2.x
+## v0.3.x
 
 <details open>
-<summary><strong>v1.2.0</strong></summary>
+<summary><strong>v0.3.2</strong></summary>
 
-- added `sleep` async function
-  - mimcs python's `time.sleep`
-
-</details>
-<br />
-
-## v1.1.x
-
-<details>
-<summary><strong>v1.1.1</strong></summary>
-
-- added lib
+- Added README
 
 </details>
 <br />
 
 <details>
-<summary><strong>v1.1.0</strong></summary>
+<summary><strong>v0.3.1</strong></summary>
 
-- `parseDate()` updates
-  - Fixed incorrect return strings when format = `"nns"` or `"nls"`
-- Added `Logger` class
-- `numParse()` updates
-  - Removed redundant code
+- Exported custom type `BulkSMSResponse` and function based functions
 
 </details>
 <br />
 
-## v1.0.x
+<details>
+<summary><strong>v0.3.0</strong></summary>
+
+- Added function based approach
+
+</details>
+<br />
+
+## v0.2.x
 
 <details>
-<summary><strong>v1.0.0</strong></summary>
+<summary><strong>v0.2.0</strong></summary>
 
-- `numParse()` updates; Breaking change
-  - You can now send the value as a `string`
-  - To use a custom seperator, you must declare it `as any`
-  - The `setting` parameter is now options, it defaults to a comma
-  - Parity with our python [qolpy](https://pypi.org/project/qolpy/) package
-- Added icon to README
+- Added duplicates parameter to `BulkSMSResponse`
 
 </details>
 <br />
@@ -332,39 +253,18 @@ console.log(fetchData());
 ## v0.1.x
 
 <details>
-<summary><strong>v0.1.3</strong></summary>
-
-- Fully added `numParse()`
-  - Add delimiters to your numbers, ideal for frontend
-
-</details>
-
-<details>
-<summary><strong>v0.1.2</strong></summary>
-
-- Fully added `parseDate()`
-  - Get date params (e.g long text version and numeric verison) in an object or a parsed date as text e.g '2 Sep 2020'
-  - Can return in American format eg 'Sep 2 2020'
-  - View the param options to see how many different types of date formats you can choose
-
-</details>
-
-<details>
 <summary><strong>v0.1.1</strong></summary>
 
-- Type hint updates
-- README restructuring
-- Source resturing
-- Update to `randomColour()`
-  - Get the colour as a hex, rgb, cmyk, hsv, or hsl string
-- Parse date funtion (WIP)
+- Fixed carrier identiier problem
 
 </details>
+<br />
 
 <details>
 <summary><strong>v0.1.0</strong></summary>
 
 - Initial release
-- Sentence casing, title casing, and abrreviations added and typed
+- Added class based approach
+- Added interaces
 
 </details>
