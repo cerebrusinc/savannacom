@@ -1,6 +1,6 @@
 {
 	"name": "savannacom",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Unnoficial Javascript SDK for the savannacom Hermes SMS API; Works on the client and server.",
 	"author": {
 		"name": "Lewis Mosho Jr | Cerebrus Inc",

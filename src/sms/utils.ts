@@ -13,7 +13,7 @@ export const numberCheck = (number: string): string | undefined => {
 
 	if (number.substring(0, 2) !== "26") return "Number does not begin with 26.";
 
-	const carrier = number.substring(2, 6);
+	const carrier = number.substring(2, 5);
 
 	switch (carrier) {
 		case "097":
