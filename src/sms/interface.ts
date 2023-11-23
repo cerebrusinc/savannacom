@@ -17,7 +17,7 @@ export interface SavannacomResponse {
 		sender_id: string;
 		/**The SMS content */
 		sender_message: string;
-		/**The recipient's phone number */
+		/**The recipient's phone number; Format 260... */
 		msisdn: string;
 	};
 	/**If a non POST method is used; It is a string referring to the error in question. We run our own checks to ensure*/
@@ -26,7 +26,7 @@ export interface SavannacomResponse {
 
 /**The custom bulk SMS request interface */
 export interface BulkSMSObject {
-	/**The recipient's phone number */
+	/**The recipient's phone number; Format 260... */
 	number: string;
 	/**The message content */
 	content: string;
@@ -34,7 +34,7 @@ export interface BulkSMSObject {
 
 /**The custom bulk SMS error object */
 export interface BulkSMSResponseError {
-	/**The recipient's phone number */
+	/**The recipient's phone number; Format 260... */
 	number: string;
 	/**The error regarding the bulk sms entry */
 	error: string;

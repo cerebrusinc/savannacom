@@ -1,3 +1,3 @@
-import { SMS } from "./sms";
+import { SMS, BulkSMSObject, bulkSms, sendSms } from "./sms";
 
-export { SMS };
+export { SMS, BulkSMSObject, bulkSms, sendSms };
