@@ -43,4 +43,5 @@ export interface BulkSMSResponseError {
 /**The cusotom bulk SMS Response Object */
 export interface BulkSMSResponse {
 	errors?: BulkSMSResponseError[];
+	duplicates?: BulkSMSObject[];
 }

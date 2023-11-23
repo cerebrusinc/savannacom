@@ -133,7 +133,10 @@ export default class SMS {
 			return { errors: [{ number: "N/A", error: "No data provided" }] };
 
 		const cleanedDataWithDuplicates: BulkSMSObject[] = [];
+		const duplicatesWithDuplicates: BulkSMSObject[] = [];
 		const errorsArray: BulkSMSResponseError[] = [];
+
+		const _blacklist: string[] = [];
 
 		data.map((entry) => {
 			const { content, number } = entry;
@@ -141,10 +144,19 @@ export default class SMS {
 			const error = numberCheck(number);
 
 			if (error) errorsArray.push({ number, error });
-			else cleanedDataWithDuplicates.push({ number, content });
+			else {
+				if (!_blacklist.includes(number)) {
+					_blacklist.push(number);
+				} else {
+					duplicatesWithDuplicates.push(entry);
+				}
+
+				cleanedDataWithDuplicates.push({ number, content });
+			}
 		});
 
 		const cleanedDataWithoutDuplicates: BulkSMSObject[] = [];
+		const duplicatesWithoutDuplicates: BulkSMSObject[] = [];
 
 		if (!withDuplicates) {
 			const blacklist: string[] = [];
@@ -155,6 +167,8 @@ export default class SMS {
 				if (!blacklist.includes(number)) {
 					blacklist.push(number);
 					cleanedDataWithoutDuplicates.push({ content, number });
+				} else {
+					duplicatesWithoutDuplicates.push(entry);
 				}
 			});
 		}
@@ -175,8 +189,16 @@ export default class SMS {
 			}
 		});
 
+		const duplicates = withDuplicates
+			? duplicatesWithDuplicates.length === 0
+				? undefined
+				: duplicatesWithDuplicates
+			: duplicatesWithoutDuplicates.length === 0
+			? undefined
+			: duplicatesWithDuplicates;
+
 		const errors = errorsArray.length === 0 ? undefined : errorsArray;
 
-		return { errors };
+		return { errors, duplicates };
 	}
 }
