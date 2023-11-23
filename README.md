@@ -31,7 +31,7 @@ const { SMS } = require("savannacom");
 You can also add the CDN via `jsDelivr`:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/savannacom@0.3.2/lib/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/savannacom@0.3.4/lib/index.js"></script>
 ```
 
 # Exports
@@ -217,6 +217,14 @@ The cusotom bulk SMS Response object.
 ## v0.3.x
 
 <details open>
+<summary><strong>v0.3.4</strong></summary>
+
+- Updated readme CDN import
+
+</details>
+<br />
+
+<details>
 <summary><strong>v0.3.3</strong></summary>
 
 - Added `bulksms` to package.json keywords
